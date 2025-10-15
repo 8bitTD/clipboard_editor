@@ -1,0 +1,11 @@
+[package]
+name = "clipboard_editor"
+version = "0.1.0"
+authors = ["8bitTD <8bittd@gmail.com>"]
+edition = "2024"
+
+[dependencies]
+bevy = "0.17.0"
+arboard = "3.6.1"
+clipboard-win = "5.4.1"
+image = "0.25.6"
