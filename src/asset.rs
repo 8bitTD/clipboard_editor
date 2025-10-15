@@ -159,7 +159,7 @@ pub fn keyboard_shortcut(
     if keyboard_input.just_pressed(KeyCode::Escape){//Escでアプリ終了
         app_exit.write(bevy::app::AppExit::Success);
     }
-     if keyboard_input.just_pressed(KeyCode::Enter) && ap.screenshot_state == app::ScreenshotState::Idle{//Enterでoutput.png出力
+    if keyboard_input.just_pressed(KeyCode::Enter) && ap.screenshot_state == app::ScreenshotState::Idle{//Enterでoutput.png出力
         if std::path::Path::new(common::SCREENSHOT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOT); }
         if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOTCUTOUT); }
         let clipboard = arboard::Clipboard::new();
