@@ -30,3 +30,6 @@ cargo run --release
 キーボードの Enter
 ### ツールを終了する
 キーボードの Esc
+
+## 動作確認
+Windows 11
