@@ -41,7 +41,6 @@ pub fn setup_system(
     
 }
 
-
 pub fn set_background_color(
     mut ap: ResMut<app::MyApp>,
     mut clear_color: ResMut<ClearColor>,
@@ -56,7 +55,6 @@ pub fn set_background_color(
         );
     }
 }
-
 
 pub fn root_scale(//ルートのスケール変更
     mut root: Single<&mut Transform, With<app::Root>>,
@@ -88,7 +86,7 @@ pub fn guide_plane(//黒板配置前のガイド板表示
     }
 }
 
-pub fn mouse_input(
+pub fn mouse_input(//マウスホイールの回転で画像の縮小具合を調整
     accumulated_mouse_scroll: Res<bevy::input::mouse::AccumulatedMouseScroll>,
     mut ap: ResMut<app::MyApp>, 
 ){
@@ -209,19 +207,15 @@ pub fn create_black_plane(
             -1 => record::Record::new(vec![]),
             _ => ap.record.records[ap.record.record_index as usize].clone()
         };
-
         if ap.record.records.len() > 0 && ap.record.record_index as usize != ap.record.records.len() -1{
             let sa = ap.record.records.len() -1 - ap.record.record_index as usize;
             for _ in 0..sa{
                 ap.record.records.pop();
             }
         }
-
         ap.record.record_index += 1;
-
         record.planes.push(plane);
         ap.record.records.push(record);
         ap.record.is_add_record = true;
-
     }
 }
