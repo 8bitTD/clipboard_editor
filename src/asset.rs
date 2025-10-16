@@ -121,7 +121,7 @@ pub fn take_screenshot(
             cropped.save(common::SCREENSHOTCUTOUT).expect("画像の保存に失敗しました");
             ap.screenshot_state = app::ScreenshotState::ReplaceClipboard;
         }
-    }else if ap.screenshot_state == app::ScreenshotState::ReplaceClipboard{//切り抜いた画像をクリップボードに置き換え
+    }else if ap.screenshot_state == app::ScreenshotState::ReplaceClipboard{//切り抜いた画像を編集
         if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ 
             if ap.is_local_save{ //ローカルに保存する場合
                 let mut tmp_screenshot_path: String = dirs::home_dir().unwrap().as_os_str().to_str().unwrap().to_string();
@@ -132,16 +132,11 @@ pub fn take_screenshot(
                 let ymdhms = datetime.format(common::SCREENSHOTLOCALFILE).to_string();
                 screenshot_path.push_str(&ymdhms);
                 let _copy_res = std::fs::copy(common::SCREENSHOTCUTOUT, &screenshot_path);
-                //if copy_res.is_ok(){
-                //    std::process::Command::new("explorer.exe")
-                //        .arg(format!("{}{}", "/select,", &screenshot_path.replace("/","\\"))).status().unwrap();
-                //}
-            }else{ //
+            }else{//切り抜いた画像をクリップボードに置き換え
                 let img = image::ImageReader::open(common::SCREENSHOTCUTOUT).unwrap().decode().unwrap();
                 let data = clipboard::gen_from_img(&img);
                 let _res = clipboard_win::set_clipboard(clipboard_win::formats::Bitmap, data);
             }
-            
             ap.screenshot_state = app::ScreenshotState::Idle;
             if std::path::Path::new(common::SCREENSHOT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOT); }
             if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOTCUTOUT); }
