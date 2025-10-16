@@ -17,7 +17,7 @@ pub fn setup_system(
         Mesh2d(meshes.add(Rectangle::default())),
         MeshMaterial2d(materials.add(Color::from(bevy::color::Srgba::new(0.0, 0.5, 1.0, 0.5)))),
         Transform::default().with_translation(Vec3::new(0.0, 0.0, 10.0)).with_scale(Vec3::new(0.0, 0.0, 0.0)),
-        app::EditPlane,
+        app::GuidePlane,
     ));
     let size = bevy::render::render_resource::Extent3d{
         width: ap.dynamic_image.width(),
@@ -65,7 +65,7 @@ pub fn root_scale(//ルートのスケール変更
 
 pub fn guide_plane(//黒板配置前のガイド板表示
     ap: Res<app::MyApp>,
-    mut plane: Single<&mut Transform, With<app::EditPlane>>,
+    mut plane: Single<&mut Transform, With<app::GuidePlane>>,
     q_windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ){
     if q_windows.single().unwrap().cursor_position().is_none(){return;}
@@ -103,7 +103,6 @@ pub fn take_screenshot(
     mut commands: Commands, 
     mut ap: ResMut<app::MyApp>, 
     mut clear_color: ResMut<ClearColor>
-    //mut app_exit: MessageWriter<bevy::app::AppExit>,
 ){
     if ap.screenshot_state == app::ScreenshotState::Idle{return;}
     if ap.screenshot_state == app::ScreenshotState::ScreenShot{//ウィンドウ内のスクリーンショットを撮影
@@ -114,8 +113,8 @@ pub fn take_screenshot(
         if !std::path::Path::new(common::SCREENSHOT).is_file(){ return; }
         else{
             let img = image::ImageReader::open(common::SCREENSHOT).unwrap().decode().unwrap();
-            let size_x = (ap.dynamic_image.width() as f32 * ap.scale - (common::SCREENSHOTOFFSET*4.0)) as u32;
-            let size_y = (ap.dynamic_image.height() as f32 * ap.scale - (common::SCREENSHOTOFFSET*4.0)) as u32;
+            let size_x = (ap.dynamic_image.width() as f32 * ap.scale - (common::SCREENSHOTOFFSET*2.0)) as u32;
+            let size_y = (ap.dynamic_image.height() as f32 * ap.scale - (common::SCREENSHOTOFFSET*2.0)) as u32;
             let start_x = ((img.width() as f32 * 0.5) - (size_x as f32 * 0.5) + common::SCREENSHOTOFFSET) as u32;
             let start_y = ((img.height() as f32 * 0.5) - (size_y as f32 * 0.5) + common::SCREENSHOTOFFSET) as u32;
             let cropped = img.crop_imm(start_x, start_y, size_x, size_y);
@@ -124,9 +123,25 @@ pub fn take_screenshot(
         }
     }else if ap.screenshot_state == app::ScreenshotState::ReplaceClipboard{//切り抜いた画像をクリップボードに置き換え
         if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ 
-            let img = image::ImageReader::open(common::SCREENSHOTCUTOUT).unwrap().decode().unwrap();
-            let data = clipboard::gen_from_img(&img);
-            let _res = clipboard_win::set_clipboard(clipboard_win::formats::Bitmap, data);
+            if ap.is_local_save{ //ローカルに保存する場合
+                let mut tmp_screenshot_path: String = dirs::home_dir().unwrap().as_os_str().to_str().unwrap().to_string();
+                tmp_screenshot_path.push_str("\\Pictures\\Screenshots\\");
+                let mut screenshot_path = tmp_screenshot_path.replace("\\","/");
+                if !std::path::Path::new(&screenshot_path).is_dir(){Some(std::fs::create_dir_all(&screenshot_path));}
+                let datetime = chrono::Utc::now().with_timezone(&chrono::FixedOffset::east_opt(9 * 3600).unwrap()).naive_local();
+                let ymdhms = datetime.format(common::SCREENSHOTLOCALFILE).to_string();
+                screenshot_path.push_str(&ymdhms);
+                let _copy_res = std::fs::copy(common::SCREENSHOTCUTOUT, &screenshot_path);
+                //if copy_res.is_ok(){
+                //    std::process::Command::new("explorer.exe")
+                //        .arg(format!("{}{}", "/select,", &screenshot_path.replace("/","\\"))).status().unwrap();
+                //}
+            }else{ //
+                let img = image::ImageReader::open(common::SCREENSHOTCUTOUT).unwrap().decode().unwrap();
+                let data = clipboard::gen_from_img(&img);
+                let _res = clipboard_win::set_clipboard(clipboard_win::formats::Bitmap, data);
+            }
+            
             ap.screenshot_state = app::ScreenshotState::Idle;
             if std::path::Path::new(common::SCREENSHOT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOT); }
             if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOTCUTOUT); }
@@ -166,6 +181,17 @@ pub fn keyboard_shortcut(
         let Ok(mut ctx) = clipboard else {return};
         let _ = ctx.clear();
         ap.screenshot_state = app::ScreenshotState::ScreenShot;
+        ap.is_local_save = false;
+        clear_color.0 = bevy::color::Color::srgba_u8(0,0,0,0);
+    }
+    if keyboard_input.just_pressed(KeyCode::NumpadAdd) && ap.screenshot_state == app::ScreenshotState::Idle{
+        if std::path::Path::new(common::SCREENSHOT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOT); }
+        if std::path::Path::new(common::SCREENSHOTCUTOUT).is_file(){ let _ = std::fs::remove_file(common::SCREENSHOTCUTOUT); }
+        let clipboard = arboard::Clipboard::new();
+        let Ok(mut ctx) = clipboard else {return};
+        let _ = ctx.clear();
+        ap.screenshot_state = app::ScreenshotState::ScreenShot;
+        ap.is_local_save = true;
         clear_color.0 = bevy::color::Color::srgba_u8(0,0,0,0);
     }
 }
